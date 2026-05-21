@@ -1,28 +1,27 @@
 import time
+import random
+import requests
+from requests.exceptions import RequestException
 
-class LatencyOptimizer:
-    def __init__(self):
-        self.start_time = None
-        self.end_time = None
+class NetworkError(Exception):
+    pass
 
-    def start_timer(self):
-        """Start the latency timer."""
-        self.start_time = time.perf_counter()
-
-    def end_timer(self):
-        """End the latency timer and return elapsed time in milliseconds."""
-        self.end_time = time.perf_counter()
-        elapsed_time = (self.end_time - self.start_time) * 1000
-        return elapsed_time
-
-    def optimize_function_call(self, func, *args, **kwargs):
-        """Wrap function call and measure latency."""
-        self.start_timer()
-        result = func(*args, **kwargs)
-        latency = self.end_timer()
-        print(f"Function '{func.__name__}' executed in {latency:.4f} ms")
-        return result
-
-# Example usage:
-# optimizer = LatencyOptimizer()
-# result = optimizer.optimize_function_call(some_function, arg1, arg2)
+def retry_request(url, retries=3, delay=2):
+    """
+    Retries a network request up to 'retries' times with a 'delay' in seconds.
+    Raises NetworkError if all retries fail.
+    """
+    for attempt in range(retries):
+        try:
+            response = requests.get(url)
+            response.raise_for_status()  # Raise an error for bad responses
+            return response.json()  # Return the JSON content on success
+        except RequestException:
+            if attempt < retries - 1:
+                # Exponential backoff strategy
+                backoff_time = delay * (2 ** attempt)
+                print(f'Retry {attempt + 1}/{retries} failed. Retrying in {backoff_time} seconds...')
+                time.sleep(backoff_time)
+            else:
+                print('All retries failed. Raising NetworkError.')
+                raise NetworkError(f'Failed to retrieve data from {url}')
