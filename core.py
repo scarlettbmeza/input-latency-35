@@ -1,36 +1,31 @@
 import time
 import numpy as np
 
-class GameLogic:
+class GameEngine:
     def __init__(self):
-        self.frame_times = []
+        self.frames = []
+        self.last_time = time.time()
+        self.frame_rate = 60
+        self.delta_time = 0
 
-    def frame_update(self):
-        start_time = time.time()
-        # Perform game logic updates here
-        self.simulate_game_logic()
-        elapsed_time = time.time() - start_time
-        self.record_frame_time(elapsed_time)
+    def update(self):
+        current_time = time.time()
+        self.delta_time = current_time - self.last_time
+        self.last_time = current_time
+        self.frames.append(self.delta_time)
+        if len(self.frames) > 100:
+            self.frames.pop(0)  # Keep only the last 100 frames
 
-    def simulate_game_logic(self):
-        # Simulated game logic computation (e.g., physics, AI)
-        np.random.rand(1000)  # Simulate computation workload
+    def get_average_frame_time(self):
+        return np.mean(self.frames) if self.frames else 0
 
-    def record_frame_time(self, elapsed_time):
-        if len(self.frame_times) >= 100:
-            self.frame_times.pop(0)  # Keep the last 100 frame times
-        self.frame_times.append(elapsed_time)
+    def run(self):
+        while True:
+            self.update()
+            frame_time = self.get_average_frame_time()
+            # Here you would render your game frame
+            time.sleep(max(0, (1 / self.frame_rate) - frame_time))  # Control frame rate 
 
-    def average_frame_time(self):
-        return np.mean(self.frame_times) if self.frame_times else 0.0
-
-    def optimize_logic(self):
-        # Implement optimizations for game logic here
-        pass
-
-# Example usage
 if __name__ == '__main__':
-    game = GameLogic()
-    for _ in range(150):  # Simulate 150 frames
-        game.frame_update()
-    print(f'Average Frame Time: {game.average_frame_time()} seconds')
+    engine = GameEngine()
+    engine.run()
