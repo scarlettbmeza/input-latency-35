@@ -1,30 +1,43 @@
 import json
 import os
 
-class ConfigLoader:
-    def __init__(self, default_config):
-        self.default_config = default_config
-        self.config = default_config.copy()
+DEFAULT_CONFIG = {
+    'graphics': {
+        'resolution': '1920x1080',
+        'fullscreen': True,
+        'vsync': True,
+    },
+    'controls': {
+        'mouse_sensitivity': 1.0,
+        'invert_y_axis': False,
+    },
+    'audio': {
+        'master_volume': 100,
+        'music_volume': 80,
+        'effects_volume': 80,
+    }
+}
 
-    def load_config(self, file_path):
-        if os.path.exists(file_path):
-            with open(file_path, 'r') as config_file:
-                try:
-                    file_config = json.load(config_file)
-                    self.config.update(file_config)
-                except json.JSONDecodeError:
-                    print('Error: Invalid JSON format in config file.')
+class ConfigLoader:
+    def __init__(self, config_file='config.json'):
+        self.config_file = config_file
+        self.config = DEFAULT_CONFIG
+        self.load_config()
+
+    def load_config(self):
+        if os.path.isfile(self.config_file):
+            with open(self.config_file, 'r') as f:
+                user_config = json.load(f)
+                self.config = self._merge_configs(DEFAULT_CONFIG, user_config)
+
+    def _merge_configs(self, default, user):
+        for key, value in user.items():
+            if isinstance(value, dict) and key in default:
+                default[key] = self._merge_configs(default[key], value)
+            else:
+                default[key] = value
+        return default
 
     def get(self, key, default=None):
         return self.config.get(key, default)
 
-# Example usage
-if __name__ == '__main__':
-    defaults = {
-        'resolution': '1920x1080',
-        'fullscreen': True,
-        'volume': 70
-    }
-    config_loader = ConfigLoader(defaults)
-    config_loader.load_config('config.json')
-    print(config_loader.config)  # This will print merged configuration
