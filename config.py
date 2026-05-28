@@ -1,43 +1,28 @@
 import json
 import os
 
-DEFAULT_CONFIG = {
-    'graphics': {
-        'resolution': '1920x1080',
-        'fullscreen': True,
-        'vsync': True,
-    },
-    'controls': {
-        'mouse_sensitivity': 1.0,
-        'invert_y_axis': False,
-    },
-    'audio': {
-        'master_volume': 100,
-        'music_volume': 80,
-        'effects_volume': 80,
-    }
-}
-
-class ConfigLoader:
-    def __init__(self, config_file='config.json'):
+class Config:
+    def __init__(self, config_file):
         self.config_file = config_file
-        self.config = DEFAULT_CONFIG
-        self.load_config()
+        self.settings = self.load_config()
 
     def load_config(self):
-        if os.path.isfile(self.config_file):
-            with open(self.config_file, 'r') as f:
-                user_config = json.load(f)
-                self.config = self._merge_configs(DEFAULT_CONFIG, user_config)
-
-    def _merge_configs(self, default, user):
-        for key, value in user.items():
-            if isinstance(value, dict) and key in default:
-                default[key] = self._merge_configs(default[key], value)
-            else:
-                default[key] = value
-        return default
+        if not os.path.isfile(self.config_file):
+            raise FileNotFoundError(f"Config file {self.config_file} not found.")
+        with open(self.config_file, 'r') as file:
+            return json.load(file)
 
     def get(self, key, default=None):
-        return self.config.get(key, default)
+        return self.settings.get(key, default)
 
+    def set(self, key, value):
+        self.settings[key] = value
+        self.save_config()
+
+    def save_config(self):
+        with open(self.config_file, 'w') as file:
+            json.dump(self.settings, file, indent=4)
+
+# Example usage:
+# config = Config('config.json')
+# print(config.get('player_name', 'default_player'))
