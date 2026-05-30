@@ -1,28 +1,32 @@
 import json
 import os
 
-class Config:
-    def __init__(self, config_file):
-        self.config_file = config_file
-        self.settings = self.load_config()
+class ConfigLoader:
+    def __init__(self, default_config_path='default_config.json'):
+        self.default_config_path = default_config_path
+        self.config = self.load_config()
 
     def load_config(self):
-        if not os.path.isfile(self.config_file):
-            raise FileNotFoundError(f"Config file {self.config_file} not found.")
-        with open(self.config_file, 'r') as file:
+        # Load default configuration
+        config = self.load_json(self.default_config_path)
+        # Override with user configuration if exists
+        user_config_path = 'user_config.json'
+        if os.path.exists(user_config_path):
+            user_config = self.load_json(user_config_path)
+            config.update(user_config)
+        return config
+
+    def load_json(self, filepath):
+        # Load JSON data from a specified file
+        with open(filepath, 'r') as file:
             return json.load(file)
 
     def get(self, key, default=None):
-        return self.settings.get(key, default)
+        # Get a configuration value by key
+        return self.config.get(key, default)
 
-    def set(self, key, value):
-        self.settings[key] = value
-        self.save_config()
-
-    def save_config(self):
-        with open(self.config_file, 'w') as file:
-            json.dump(self.settings, file, indent=4)
-
-# Example usage:
-# config = Config('config.json')
-# print(config.get('player_name', 'default_player'))
+# Example usage of the ConfigLoader
+if __name__ == '__main__':
+    config_loader = ConfigLoader()
+    screen_resolution = config_loader.get('screen_resolution', '1920x1080')
+    print(f'Screen resolution is set to: {screen_resolution}')
